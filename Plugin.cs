@@ -7,6 +7,7 @@ using System.Timers;
 using vatsys;
 using vatsys.Plugin;
 using Newtonsoft.Json;
+using System.Threading.Tasks;
 
 namespace FrequencyViewerPlugin
 {
@@ -14,6 +15,7 @@ namespace FrequencyViewerPlugin
     public class Plugin : ILabelPlugin
     {
         public string Name { get => "Frequency Viewer"; }
+        private static readonly Version pluginVersion = new Version(0, 6);
         private static List<Transceiver> Transceivers { get; set; } = new List<Transceiver>();
         private static readonly HttpClient httpClient = new HttpClient();
         private static Timer _timer;
@@ -21,12 +23,12 @@ namespace FrequencyViewerPlugin
         private Track selectedTrack;
 
         private readonly string transceiversDataUrl = "https://data.vatsim.net/v3/transceivers-data.json";
+        private readonly string versionUrl = "https://raw.githubusercontent.com/azfv/FrequencyViewerPlugin/master/Version.json";
         private bool networkErrorDisplayed = false;
-
 
         private void SelectedTrackChanged(object sender, EventArgs e)
         {
-            if(MMI.SelectedTrack == null)
+            if (MMI.SelectedTrack == null)
             {
                 if (selectedTrack == null) return;
 
@@ -39,19 +41,22 @@ namespace FrequencyViewerPlugin
 
                 var opData = PreSelectOpData.Find(op => op[0] == selTrackFdr.Callsign);
                 selTrackFdr.LocalOpData = opData[1];
+                selTrackFdr.PropertyChanged -= Fdr_PropertyChanged;
                 PreSelectOpData.Remove(opData);
                 selectedTrack = null;
 
                 return;
             };
 
-            if(selectedTrack != null)
+            if (selectedTrack != null)
             {
                 var oldTrackFdr = selectedTrack.GetFDR();
                 if (oldTrackFdr == null) return;
                 var opData = PreSelectOpData.Find(op => op[0] == oldTrackFdr.Callsign);
+                if (opData == null) return;
 
                 oldTrackFdr.LocalOpData = opData[1];
+                oldTrackFdr.PropertyChanged -= Fdr_PropertyChanged;
                 PreSelectOpData.Remove(opData);
                 selectedTrack = null;
             }
@@ -63,10 +68,28 @@ namespace FrequencyViewerPlugin
             if (transceiver != null)
             {
                 selectedTrack = MMI.SelectedTrack;
-                PreSelectOpData.Add(new string[] { newTrackFdr.Callsign, newTrackFdr.LocalOpData });
-                newTrackFdr.LocalOpData = $"{string.Join(" ", transceiver.transceivers.Select(transceiverData => transceiverData.FreqMhz()).ToList())}";
-
+                var oldOpData = newTrackFdr.LocalOpData;
+                var newOpData = string.Join(" ", transceiver.transceivers.Select(transceiverData => transceiverData.FreqMhz()).ToList());
+                PreSelectOpData.Add(new string[] { newTrackFdr.Callsign, oldOpData, newOpData });
+                newTrackFdr.LocalOpData = newOpData;
+                newTrackFdr.PropertyChanged += Fdr_PropertyChanged;
                 return;
+            }
+        }
+
+        private void Fdr_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == "LocalOpData")
+            {
+                var selFdr = selectedTrack.GetFDR();
+                if (selFdr == null) return;
+                var ops = PreSelectOpData.Find(op => op[0] == selFdr.Callsign);
+                if (ops == null || ops[2] == selFdr.LocalOpData || ops[1] == selFdr.LocalOpData) return;
+
+                PreSelectOpData.Remove(ops);
+                selFdr.PropertyChanged -= Fdr_PropertyChanged;
+                selectedTrack = null;
+                MMI.DeselectTrack();
             }
         }
 
@@ -76,10 +99,12 @@ namespace FrequencyViewerPlugin
             {
                 var content = await httpClient.GetStringAsync(transceiversDataUrl);
                 Transceivers = JsonConvert.DeserializeObject<List<Transceiver>>(content);
-            } catch(Exception ex) {
+            }
+            catch (Exception ex)
+            {
                 if (networkErrorDisplayed) return;
                 networkErrorDisplayed = true;
-                Errors.Add(new Exception($"An error occured when trying to fetch transceiver data! ${ex.Message}"), "Frequency Viewer");
+                Errors.Add(new Exception($"An error occured when trying to fetch transceiver data! {ex.Message}"), "Frequency Viewer");
             }
         }
 
@@ -91,6 +116,23 @@ namespace FrequencyViewerPlugin
             _timer.Start();
 
             MMI.SelectedTrackChanged += SelectedTrackChanged;
+
+            _ = CheckVersion();
+        }
+
+        // thx aj xx
+        private async Task CheckVersion()
+        {
+            try
+            {
+                var response = await httpClient.GetStringAsync(versionUrl);
+
+                var version = JsonConvert.DeserializeObject<Version>(response);
+                if (version.Major == pluginVersion.Major && version.Minor == pluginVersion.Minor) return;
+
+                Errors.Add(new Exception($"Download version v{version} from the GitHub"), "Frequency Viewer");
+            }
+            catch { }
         }
 
         public CustomLabelItem GetCustomLabelItem(string itemType, Track track, FDP2.FDR flightDataRecord, RDP.RadarTrack radarTrack)
