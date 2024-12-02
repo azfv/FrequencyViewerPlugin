@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.8.34408.163
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FrequencyViewerPlugin", "FrequencyViewerPlugin.csproj", "{EF8449ED-E98B-4F74-A4D1-A402D28DF78A}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Debug|x86 = Debug|x86
+		Release|Any CPU = Release|Any CPU
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{EF8449ED-E98B-4F74-A4D1-A402D28DF78A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EF8449ED-E98B-4F74-A4D1-A402D28DF78A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EF8449ED-E98B-4F74-A4D1-A402D28DF78A}.Debug|x86.ActiveCfg = Debug|x86
+		{EF8449ED-E98B-4F74-A4D1-A402D28DF78A}.Debug|x86.Build.0 = Debug|x86
+		{EF8449ED-E98B-4F74-A4D1-A402D28DF78A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EF8449ED-E98B-4F74-A4D1-A402D28DF78A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EF8449ED-E98B-4F74-A4D1-A402D28DF78A}.Release|x86.ActiveCfg = Release|x86
+		{EF8449ED-E98B-4F74-A4D1-A402D28DF78A}.Release|x86.Build.0 = Release|x86
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {22F59775-793F-4372-9CED-5313948291FA}
+	EndGlobalSection
+EndGlobal
